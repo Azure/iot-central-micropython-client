@@ -1,0 +1,3 @@
+import iotc
+
+iotc.run()
