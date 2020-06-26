@@ -1,4 +1,4 @@
-ssid='GF_House'
+ssid='Vodafone-Druda'
 password='askisambi'
 
 def disable_debug():

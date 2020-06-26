@@ -24,3 +24,26 @@ class IoTCEvents:
     PROPERTIES = 1
     COMMANDS = 2
     C2D = 3
+
+unsafe = {
+    '?': '%3F',
+    ' ': '%20',
+    '$': '%24',
+    '%': '%25',
+    '&': '%26',
+    "\'": '%27',
+    '/': '%2F',
+    ':': '%3A',
+    ';': '%3B',
+    '+': '%2B',
+    '=': '%3D',
+    '@': '%40'
+}
+
+def encode_uri_component(string):
+    ret = ''
+    for char in string:
+        if char in unsafe:
+            char = unsafe[char]
+        ret = '{}{}'.format(ret, char)
+    return ret

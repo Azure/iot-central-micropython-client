@@ -6,11 +6,8 @@ except:
     print('ERROR: missing dependency `utime`')
     sys.exit(1)
 
-import ubinascii
-import hashlib
+from .constants import IoTCConnectType,encode_uri_component
 
-from .constants import IoTCConnectType
-from .hmac import new as hmac
 try:
     import urequests
 except:
@@ -47,6 +44,7 @@ class ProvisioningClient():
         self._scope_id = scope_id
         self._registration_id = registration_id
         self._credentials_type = credentials_type
+        self._api_version='2019-01-15'
         if self._credentials_type in (IoTCConnectType.DEVICE_KEY, IoTCConnectType.SYMM_KEY):
             self._device_key = credentials
             if self._credentials_type == IoTCConnectType.SYMM_KEY:
@@ -72,29 +70,48 @@ class ProvisioningClient():
             self._device_key, '{}\n{}'.format(resource_uri, expiry)))
         self._password = 'SharedAccessSignature sr={}&sig={}&se={}&skn=registration'.format(
             resource_uri, signature, expiry)
-        self._request_id = int(time())
+        self._headers = {"content-type": "application/json; charset=utf-8","user-agent": "iot-central-client/1.0", "Accept": "*/*", 'authorization': self._password}
     
 
     def _on_message(self, topic, message):
         print(topic.decode('utf-8'))
 
+    def set_model_id(self,model_id):
+        self._model_id=model_id
+
     def register(self):
-        headers = {"content-type": "application/json; charset=utf-8",
-                   "user-agent": "iot-central-client/1.0", "Accept": "*/*", 'authorization': self._password}
+        sleep(5)
+        body = {'registrationId':self._registration_id}
+        if self._model_id is not None:
+            print(self._model_id)
+            body['data']={'iotcModelId':self._model_id}
 
-        body = "{{\"registrationId\":\"{}\"}}".format(self._registration_id)
         uri = "https://{}/{}/registrations/{}/register?api-version={}".format(
-            self._endpoint, self._scope_id, self._registration_id, '2019-03-31')
-        response = urequests.put(uri, data=body, headers=headers)
-
+            self._endpoint, self._scope_id, self._registration_id, self._api_version)
+        
+        response = urequests.put(uri, data=json.dumps(body), headers=self._headers)
+        print(response.text)
         operation_id = json.loads(response.text)['operationId']
-        sleep(2)
+        response.close()
+        sleep(5)
+        return self._loop_assignment(operation_id)
+    
+
+    def _loop_assignment(self,operation_id):
+        print('Quering registration...')
         uri = "https://{}/{}/registrations/{}/operations/{}?api-version={}".format(
-            self._endpoint, self._scope_id, self._registration_id, operation_id, '2019-03-31')
-        response = urequests.get(uri, headers=headers)
-        if response.status_code == 200:
+            self._endpoint, self._scope_id, self._registration_id, operation_id, self._api_version)
+        response = urequests.get(uri, headers=self._headers)
+        if response.status_code == 202:
+            print('Assigning...')
+            response.close()
+            sleep(3)
+            return self._loop_assignment(operation_id)
+        elif response.status_code == 200:
+            print('Assigned')
             assigned_hub = json.loads(response.text)[
                 'registrationState']['assignedHub']
+            response.close()
             expiry = time() + 946706400
             resource_uri = '{}/devices/{}'.format(
                 assigned_hub, self._registration_id)
@@ -102,8 +119,13 @@ class ProvisioningClient():
                 self._device_key, '{}\n{}'.format(resource_uri, expiry)))
             print('Got hub details')
             return Credentials(assigned_hub,'{}/{}/?api-version=2019-03-30'.format(assigned_hub, self._registration_id),'SharedAccessSignature sr={}&sig={}&se={}'.format(resource_uri, signature, expiry))
+        else:
+            return None
 
     def _compute_key(self, key, payload):
+        import ubinascii
+        import hashlib
+        from .hmac import new as hmac
         try:
             secret = ubinascii.a2b_base64(key)
         except:
@@ -114,28 +136,3 @@ class ProvisioningClient():
             'utf8'), digestmod=hashlib.sha256).digest()).decode('utf-8')
         ret = ret[:-1]
         return ret
-
-
-unsafe = {
-    '?': '%3F',
-    ' ': '%20',
-    '$': '%24',
-    '%': '%25',
-    '&': '%26',
-    "\'": '%27',
-    '/': '%2F',
-    ':': '%3A',
-    ';': '%3B',
-    '+': '%2B',
-    '=': '%3D',
-    '@': '%40'
-}
-
-
-def encode_uri_component(string):
-    ret = ''
-    for char in string:
-        if char in unsafe:
-            char = unsafe[char]
-        ret = '{}{}'.format(ret, char)
-    return ret
