@@ -2,14 +2,14 @@ from constants import IoTCLogLevel,IoTCEvents,encode_uri_component,HubTopics
 from utime import time,sleep
 import json
 
-class Command:
-    def __init__(self,name,request_id):
-        self._name=name,
-        self._request_id=request_id
+class Command():
+    def __init__(self, cmd_name, request_id):
+        self._cmd_name = cmd_name
+        self._request_id = request_id
 
     @property
     def name(self):
-        return self._name
+        return self._cmd_name
     @property
     def payload(self):
         return self._payload
@@ -32,6 +32,7 @@ class DeviceClient():
         self._connected=False
         self._events = {}
         self._logger = logger
+        self._twin_request_id = time()
 
         import ure
         self._commands_regex=ure.compile('\$iothub\/methods\/POST\/(.+)\/\?\$rid=(.+)')
@@ -58,11 +59,13 @@ class DeviceClient():
 
         elif topic.startswith(HubTopics.COMMANDS):
             # commands
-            self._logger.info('Received command message: {}'.format(message))
+            self._logger.info('Received command {} with message: {}'.format(topic,message))
             match=self._commands_regex.match(topic)
             if match is not None:
                 if all(m is not None for m in [match.group(1),match.group(2)]):
-                    command=Command(match.group(1),match.group(2))
+                    command_name=match.group(1)
+                    command_req=match.group(2)
+                    command=Command(command_name,command_req)
                     if message is not None:
                         command.payload=message
                         self._on_commands(command)
@@ -71,7 +74,6 @@ class DeviceClient():
         if credentials is not None:
             self._credentials = credentials
             
-
         # clean up modules
         try:
             import sys
@@ -80,16 +82,19 @@ class DeviceClient():
             pass
 
         try:
-            from umqtt.simple import MQTTClient
+            from umqtt.robust import MQTTClient
         except:
             print('Mqtt library not found. Installing...')
             import upip
-            upip.install('micropython-umqtt.simple')
-            from umqtt.simple import MQTTClient
+            upip.install('micropython-umqtt.robust')
+            from umqtt.robust import MQTTClient
+        
+        self._logger.debug('Hub username: {}'.format(self._credentials.user))
+        self._logger.debug('Hub Password: {}'.format(self._credentials.password))
         self._mqtt_client = MQTTClient(self._device_id, self._credentials.host, 8883, self._credentials.user.encode(
-            'utf-8'), self._credentials.password.encode('utf-8'), ssl=True)
+            'utf-8'), self._credentials.password.encode('utf-8'), ssl=True,keepalive=60)
         sleep(3)
-        self._mqtt_client.connect()
+        self._mqtt_client.connect(False)
         self._connected = True
         self._logger.info('Device connected!')
         self._mqtt_client.set_callback(self._on_message)
@@ -99,9 +104,9 @@ class DeviceClient():
         self._mqtt_client.subscribe(
             '{}/#'.format(HubTopics.C2D.format(self._device_id)))
 
-        self._twin_request_id = time()
+        self._logger.debug(self._twin_request_id)
         self._mqtt_client.publish(
-            HubTopics.TWIN_REQ.format(self._twin_request_id), '{{}}')
+            HubTopics.TWIN_REQ.format(self._twin_request_id).encode('utf-8'), '{{}}')
 
     def is_connected(self):
         if self._connected == True:
@@ -112,8 +117,9 @@ class DeviceClient():
         self._model_id=model
 
     def send_property(self, payload):
+        self._logger.debug('Sending properties {}'.format(json.dumps(payload)))
         self._mqtt_client.publish(
-            HubTopics.PROP_REPORT.format(time()), json.dumps(payload))
+            HubTopics.PROP_REPORT.format(time()).encode('utf-8'), json.dumps(payload))
 
     def send_telemetry(self,payload,properties=None):
         topic = 'devices/{}/messages/events/?$.ct={}&$.ce={}'.format(self._device_id,self._content_type,self._content_encoding)
@@ -128,7 +134,11 @@ class DeviceClient():
         self._events[event] = callback
 
     def listen(self):
-        self._mqtt_client.check_msg()
+        if not self.is_connected():
+            return
+        self._mqtt_client.ping()
+        self._mqtt_client.wait_msg()
+        sleep(1)
 
     def on_properties_update(self, patch):
         try:
@@ -154,6 +164,7 @@ class DeviceClient():
                     'Property "{}" unsuccessfully processed'.format(prop))
 
     def _cmd_resp(self, command:Command,value):
+        self._logger.debug('Responding to command "{}" request'.format(command.name))
         self.send_property({
             '{}'.format(command.name): {
                 'value': value,
@@ -162,7 +173,8 @@ class DeviceClient():
         })
 
     def _cmd_ack(self,command:Command):
-        self._mqtt_client.publish('$iothub/methods/res/${}/?$rid=${}'.format(200,command.request_id),'')
+        self._logger.debug('Acknowledging command {}'.format(command.name))
+        self._mqtt_client.publish('$iothub/methods/res/{}/?$rid={}'.format(200,command.request_id).encode('utf-8'),'')
 
     def _on_commands(self,command:Command):
         try:

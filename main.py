@@ -11,11 +11,11 @@ except:
 
 logger = ConsoleLogger(IoTCLogLevel.ALL)
 scope_id='0ne0011423C'
-device_id='upy2'
+device_id='upy3'
 key='r0mxLzPr9gg5DfsaxVhOwKK2+8jEHNclmCeb9iACAyb2A7yHPDrB2/+PTmwnTAetvI6oQkwarWHxYbkIVLybEg=='
 conn_type=IoTCConnectType.SYMM_KEY
 
-prov=ProvisioningClient(scope_id,device_id,conn_type,key,logger)
+prov=ProvisioningClient(scope_id,device_id,conn_type,key,logger,'urn:testapplucaM3:TestC2D_7f7:5')
 creds=prov.register()
 from device import DeviceClient
 client=DeviceClient(device_id,creds,logger)
@@ -26,17 +26,20 @@ def on_properties(name, value):
 
 
 def on_commands(command, ack):
-    print('Received command {}.'.format(command.name))
+    print('Command {}.'.format(command.name))
     ack(command, command.payload)
 
 
 client.on(IoTCEvents.PROPERTIES, on_properties)
 client.on(IoTCEvents.COMMANDS, on_commands)
-client.set_model_id('urn:testapplucaM3:TestC2D_7f7:5')
 client.connect()
 
+client.send_property({'devProp':10})
+
+
 while client.is_connected():
-    print('Sending telemetry')
     client.listen()
-    sleep(3)
-    client.send_telemetry({'temperature':randint(0,30),'pressure':randint(0,30),'humidity':randint(0,30)})
+    print('Sending telemetry')
+    client.send_telemetry({'temperature':randint(0,20),'pressure':randint(0,20),'humidity':randint(0,20)})
+    sleep(2)
+
