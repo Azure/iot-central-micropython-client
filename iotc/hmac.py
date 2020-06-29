@@ -2,13 +2,6 @@
 
 Implements the HMAC algorithm as described by RFC 2104.
 """
-try:
-    import warnings as _warnings
-except:
-    print('ERROR: missing dependency `micropython-warnings`')
-    import upip
-    upip.install('micropython-warnings')
-    import warnings as _warnings
     
 #from _operator import _compare_digest as compare_digest
 import hashlib as _hashlib
@@ -53,8 +46,6 @@ class HMAC:
             raise TypeError("key: expected bytes or bytearray, but got %r" % type(key).__name__)
 
         if digestmod is None:
-            _warnings.warn("HMAC() without an explicit digestmod argument "
-                           "is deprecated.", PendingDeprecationWarning, 2)
             digestmod = _hashlib.sha256
 
         if callable(digestmod):
@@ -71,14 +62,8 @@ class HMAC:
         if hasattr(self.inner, 'block_size'):
             blocksize = self.inner.block_size
             if blocksize < 16:
-                _warnings.warn('block_size of %d seems too small; using our '
-                               'default of %d.' % (blocksize, self.blocksize),
-                               RuntimeWarning, 2)
                 blocksize = self.blocksize
         else:
-            _warnings.warn('No block_size attribute on given digest object; '
-                           'Assuming %d.' % (self.blocksize),
-                           RuntimeWarning, 2)
             blocksize = self.blocksize
 
         # self.blocksize is the default blocksize. self.block_size is
