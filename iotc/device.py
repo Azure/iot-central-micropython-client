@@ -68,7 +68,22 @@ class DeviceClient():
                     command=Command(command_name,command_req)
                     if message is not None:
                         command.payload=message
-                        self._on_commands(command)
+                    self._on_commands(command)
+
+        elif topic.startswith(HubTopics.ENQUEUED_COMMANDS.format(self._device_id)):
+            params=topic.split("devices/{}/messages/devicebound/".format(self._device_id),1)[1].split('&')
+            for param in params:
+                p=param.split('=')
+                if p[0] == "method-name":
+                    command_name=p[1].split("Commands%3A")[1]
+            
+            self._logger.info('Received enqueued command {} with message: {}'.format(command_name,message))
+            command=Command(command_name,None)
+            if message is not None:
+                command.payload=message
+            self._on_enqueued_commands(command)
+
+
 
     def connect(self,credentials=None):
         if credentials is not None:
@@ -102,7 +117,7 @@ class DeviceClient():
         self._mqtt_client.subscribe('{}/#'.format(HubTopics.PROPERTIES))
         self._mqtt_client.subscribe('{}/#'.format(HubTopics.COMMANDS))
         self._mqtt_client.subscribe(
-            '{}/#'.format(HubTopics.C2D.format(self._device_id)))
+            '{}/#'.format(HubTopics.ENQUEUED_COMMANDS.format(self._device_id)))
 
         self._logger.debug(self._twin_request_id)
         self._mqtt_client.publish(
@@ -187,3 +202,15 @@ class DeviceClient():
         self._cmd_ack(command)
 
         cmd_cb(command, self._cmd_resp)
+
+    def _on_enqueued_commands(self,command:Command):
+        try:
+            cmd_cb = self._events[IoTCEvents.ENQUEUED_COMMANDS]
+        except KeyError:
+            return
+        
+        self._logger.debug(
+                'Received enqueued command {}'.format(command.name))
+        self._cmd_ack(command)
+
+        cmd_cb(command)

@@ -17,13 +17,13 @@ class HubTopics:
     PROPERTIES = '$iothub/twin/PATCH/properties/desired'
     PROP_REPORT = '$iothub/twin/PATCH/properties/reported/?$rid={}'
     COMMANDS = '$iothub/methods/POST'
-    C2D = 'devices/{}/messages/devicebound'
+    ENQUEUED_COMMANDS = 'devices/{}/messages/devicebound'
 
 
 class IoTCEvents:
     PROPERTIES = 1
     COMMANDS = 2
-    C2D = 3
+    ENQUEUED_COMMANDS = 3
 
 unsafe = {
     '?': '%3F',
