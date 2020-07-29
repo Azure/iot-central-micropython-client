@@ -1,51 +1,27 @@
 import sys
 import gc
-
+gc.collect()
+import json
+from iotc.constants import IoTCConnectType,encode_uri_component,ConsoleLogger,IoTCLogLevel
+import ubinascii
+import hashlib
+from iotc.hmac import new as hmac
+gc.collect()
 try:
     from utime import time, sleep
-    gc.collect()
 except:
     print('ERROR: missing dependency `utime`')
     sys.exit(1)
+gc.collect()
+
 try:
     import urequests
-    gc.collect()
 except:
     import upip
     upip.install('micropython-urequests')
     import urequests
-
-import json
-
-unsafe = {
-    '?': '%3F',
-    ' ': '%20',
-    '$': '%24',
-    '%': '%25',
-    '&': '%26',
-    "\'": '%27',
-    '/': '%2F',
-    ':': '%3A',
-    ';': '%3B',
-    '+': '%2B',
-    '=': '%3D',
-    '@': '%40'
-}
-
-def encode_uri_component(string):
-    ret = ''
-    for char in string:
-        if char in unsafe:
-            char = unsafe[char]
-        ret = '{}{}'.format(ret, char)
-    return ret
-
 gc.collect()
 
-class IoTCConnectType:
-    SYMM_KEY = 1
-    DEVICE_KEY = 2
-    x509_CERT = 3
 
 class Credentials:
 
@@ -78,7 +54,10 @@ class ProvisioningClient():
         self._registration_id = registration_id
         self._credentials_type = credentials_type
         self._api_version = '2019-01-15'
-        self._logger = logger
+        if logger is not None:
+            self._logger=logger
+        else:
+            self._logger=ConsoleLogger(IoTCLogLevel.DISABLED)
 
         if model_id is not None:
             self._model_id = model_id
@@ -176,9 +155,6 @@ class ProvisioningClient():
             return None
 
     def _compute_key(self, key, payload):
-        import ubinascii
-        import hashlib
-        from iotc.hmac import new as hmac
         try:
             secret = ubinascii.a2b_base64(key)
         except:
