@@ -1,5 +1,4 @@
-from constants import *
-from provision import ProvisioningClient
+import sys
 from utime import sleep
 
 try:
@@ -9,15 +8,17 @@ except:
     upip.install('micropython-random')
     from random import randint
 
+from iotc.provision import Credentials,IoTCConnectType,ProvisioningClient
+from iotc.logger import ConsoleLogger,IoTCLogLevel
+from iotc.device import DeviceClient,IoTCEvents
+
 logger = ConsoleLogger(IoTCLogLevel.ALL)
 scope_id='0ne0011423C'
 device_id='264hjjv1hqf'
 key='S8Zg6NINKgCvNIzSnX/JrYIkd5EuXRy5HKZxVPj6798='
 conn_type=IoTCConnectType.DEVICE_KEY
-
 prov=ProvisioningClient(scope_id,device_id,conn_type,key,logger)
 creds=prov.register()
-from device import DeviceClient
 client=DeviceClient(device_id,creds,logger)
 
 def on_properties(name, value):
@@ -38,7 +39,6 @@ client.on(IoTCEvents.COMMANDS, on_commands)
 client.connect()
 
 client.send_property({'readOnlyProp':40})
-
 
 while client.is_connected():
     client.listen()

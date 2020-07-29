@@ -1,15 +1,15 @@
 import sys
+import gc
 
 try:
     from utime import time, sleep
+    gc.collect()
 except:
     print('ERROR: missing dependency `utime`')
     sys.exit(1)
-
-from constants import IoTCConnectType, encode_uri_component
-
 try:
     import urequests
+    gc.collect()
 except:
     import upip
     upip.install('micropython-urequests')
@@ -17,6 +17,35 @@ except:
 
 import json
 
+unsafe = {
+    '?': '%3F',
+    ' ': '%20',
+    '$': '%24',
+    '%': '%25',
+    '&': '%26',
+    "\'": '%27',
+    '/': '%2F',
+    ':': '%3A',
+    ';': '%3B',
+    '+': '%2B',
+    '=': '%3D',
+    '@': '%40'
+}
+
+def encode_uri_component(string):
+    ret = ''
+    for char in string:
+        if char in unsafe:
+            char = unsafe[char]
+        ret = '{}{}'.format(ret, char)
+    return ret
+
+gc.collect()
+
+class IoTCConnectType:
+    SYMM_KEY = 1
+    DEVICE_KEY = 2
+    x509_CERT = 3
 
 class Credentials:
 
@@ -36,6 +65,9 @@ class Credentials:
     @property
     def password(self):
         return self._password
+
+    def __str__(self):
+        return 'Host={};User={};Password={}'.format(self._host,self._user,self._password)
 
 
 class ProvisioningClient():
@@ -74,7 +106,9 @@ class ProvisioningClient():
         try:
             from ntptime import settime
             settime()
-            del modules['ntptime']
+            gc.collect()
+            del sys.modules['ntptime']
+            gc.collect()
         except:
             pass
         
@@ -83,6 +117,9 @@ class ProvisioningClient():
             self._device_key, '{}\n{}'.format(resource_uri, expiry)))
         self._password = 'SharedAccessSignature sr={}&sig={}&se={}&skn=registration'.format(
             resource_uri, signature, expiry)
+        del expiry
+        del signature
+        gc.collect()
         self._logger.debug(self._username)
         self._logger.debug(self._password)
         self._headers = {"content-type": "application/json; charset=utf-8",
@@ -92,7 +129,7 @@ class ProvisioningClient():
         print(topic.decode('utf-8'))
 
     def register(self):
-        
+        gc.collect()
         self._logger.debug('Registering...')
         body = {'registrationId': self._registration_id}
         try:
@@ -109,9 +146,11 @@ class ProvisioningClient():
         sleep(5)
         creds = self._loop_assignment(operation_id)
         self._clean_imports()
+        self._logger.debug(creds)
         return creds
 
     def _loop_assignment(self, operation_id):
+        gc.collect()
         self._logger.debug('Quering registration...')
         uri = "https://{}/{}/registrations/{}/operations/{}?api-version={}".format(
             self._endpoint, self._scope_id, self._registration_id, operation_id, self._api_version)
@@ -139,7 +178,7 @@ class ProvisioningClient():
     def _compute_key(self, key, payload):
         import ubinascii
         import hashlib
-        from hmac import new as hmac
+        from iotc.hmac import new as hmac
         try:
             secret = ubinascii.a2b_base64(key)
         except:
@@ -154,17 +193,21 @@ class ProvisioningClient():
     def _clean_imports(self):
         try:
             del sys.modules['ubinascii']
+            del ubinascii
         except:
             pass
         try:
             del sys.modules['hashlib']
+            del hashlib
         except:
             pass
         try:
-            del sys.modules['hmac']
+            del sys.modules['iotc.hmac']
+            del hmac
         except:
             pass
         try:
             del sys.modules['urequests']
+            del urequests
         except:
             pass

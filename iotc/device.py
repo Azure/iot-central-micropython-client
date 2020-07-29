@@ -1,6 +1,40 @@
-from constants import IoTCLogLevel,IoTCEvents,encode_uri_component,HubTopics
+import gc
+gc.collect()
 from utime import time,sleep
+gc.collect()
 import json
+gc.collect()
+try:
+    from umqtt.robust import MQTTClient
+    gc.collect()
+except:
+    print('Mqtt library not found. Installing...')
+    import upip
+    upip.install('micropython-umqtt.robust')
+    from umqtt.robust import MQTTClient
+
+unsafe = {
+    '?': '%3F',
+    ' ': '%20',
+    '$': '%24',
+    '%': '%25',
+    '&': '%26',
+    "\'": '%27',
+    '/': '%2F',
+    ':': '%3A',
+    ';': '%3B',
+    '+': '%2B',
+    '=': '%3D',
+    '@': '%40'
+}
+
+def encode_uri_component(string):
+    ret = ''
+    for char in string:
+        if char in unsafe:
+            char = unsafe[char]
+        ret = '{}{}'.format(ret, char)
+    return ret
 
 class Command():
     def __init__(self, cmd_name, request_id):
@@ -22,19 +56,42 @@ class Command():
     def request_id(self):
         return self._request_id
 
+class IoTCEvents:
+    PROPERTIES = 1
+    COMMANDS = 2
+    ENQUEUED_COMMANDS = 3
+
+class HubTopics:
+    TWIN = '$iothub/twin/res/#'
+    TWIN_REQ = '$iothub/twin/GET/?$rid={}'
+    TWIN_RES = '$iothub/twin/res/{}/?$rid={}'
+    PROPERTIES = '$iothub/twin/PATCH/properties/desired'
+    PROP_REPORT = '$iothub/twin/PATCH/properties/reported/?$rid={}'
+    COMMANDS = '$iothub/methods/POST'
+    ENQUEUED_COMMANDS = 'devices/{}/messages/devicebound'
 
 class DeviceClient():
     def __init__(self,device_id, credentials, logger):
+        # clean up modules
+        try:
+            import sys
+            del sys.modules['iotc.provision']
+            del sys.modules['iotc']
+        except:
+            pass
         self._device_id=device_id
-        self._credentials = credentials
         self._content_type='application%2Fjson'
         self._content_encoding='utf-8'
         self._connected=False
         self._events = {}
         self._logger = logger
         self._twin_request_id = time()
+        self._mqtt_client = MQTTClient(self._device_id,credentials.host, 8883, credentials.user.encode(
+            'utf-8'), credentials.password.encode('utf-8'), ssl=True,keepalive=60)
+
 
         import ure
+        gc.collect()
         self._commands_regex=ure.compile('\$iothub\/methods\/POST\/(.+)\/\?\$rid=(.+)')
 
 
@@ -85,30 +142,7 @@ class DeviceClient():
 
 
 
-    def connect(self,credentials=None):
-        if credentials is not None:
-            self._credentials = credentials
-            
-        # clean up modules
-        try:
-            import sys
-            del sys.modules['provision']
-        except:
-            pass
-
-        try:
-            from umqtt.robust import MQTTClient
-        except:
-            print('Mqtt library not found. Installing...')
-            import upip
-            upip.install('micropython-umqtt.robust')
-            from umqtt.robust import MQTTClient
-        
-        self._logger.debug('Hub username: {}'.format(self._credentials.user))
-        self._logger.debug('Hub Password: {}'.format(self._credentials.password))
-        self._mqtt_client = MQTTClient(self._device_id, self._credentials.host, 8883, self._credentials.user.encode(
-            'utf-8'), self._credentials.password.encode('utf-8'), ssl=True,keepalive=60)
-        sleep(3)
+    def connect(self):
         self._mqtt_client.connect(False)
         self._connected = True
         self._logger.info('Device connected!')

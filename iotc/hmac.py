@@ -4,7 +4,9 @@ Implements the HMAC algorithm as described by RFC 2104.
 """
     
 #from _operator import _compare_digest as compare_digest
+import gc
 import hashlib as _hashlib
+gc.collect()
 PendingDeprecationWarning = None
 RuntimeWarning = None
 

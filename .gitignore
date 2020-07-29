@@ -1,5 +1,11 @@
 # Python
 __pycache__
 dist
+*egg-info
+
+# Micropython
+boot.py
+main.py
+
 # VsCode
 .vscode
