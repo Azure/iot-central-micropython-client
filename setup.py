@@ -7,7 +7,7 @@ sys.path.append(".")
 import sdist_upip
 
 setup(name='micropython-iotc',
-      version='1.0.3',
+      version='1.0.4',
       description='Azure IoT Central client for MicroPython (mqtt protocol)',
       long_description='',
       url='https://github.com/iot-for-all/iotc-micropython-client',
