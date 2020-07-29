@@ -1,4 +1,4 @@
-# Microsoft Azure IoTCentral SDK for MicroPython
+# Azure IoTCentral SDK for MicroPython
 
 [![Join the chat at https://gitter.im/iotdisc/community](https://badges.gitter.im/iotdisc.svg)](https://gitter.im/iotdisc/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Licensed under the MIT License](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/iot-for-all/iotc-micropython-client/blob/master/LICENSE)
@@ -27,10 +27,8 @@ except:
 The same commands apply when running through Micropython REPL.
 
 > **NOTE:** for low-end devices like the **ESP8266**, importing as external module can cause out-of-memory exception during execution because of the limited amount of heap space.
-For this kind of boards, putting the library on flash memory as a frozen module might be the only available option.
-<br/>
-<br/>
-Details on how to build a custom firmware for specific boards with frozen modules can be found on official micropython [github repo](https://github.com/micropython/micropython) and [website](http://docs.micropython.org/en/latest/) 
+For this kind of boards, putting the library on flash memory as a frozen module might be the only available option.<br/><br/>
+Details on how to build a custom firmware for specific boards with frozen modules can be found on official micropython [github repository](https://github.com/micropython/micropython) and [website](http://docs.micropython.org/en/latest/).
 
 
 ## Samples
