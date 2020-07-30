@@ -93,6 +93,19 @@ _iotc.set_content_encoding(content_encoding)_ # .e.g 'ascii'
 client.send_property({'fieldName':'fieldValue'})
 ```
 
+## Listen to events
+Due to limitations of the Mqtt library for micropython, you must explictely declare your will to listen for incoming messages. This client implements a non-blocking way of receiving messages so if no messages are present, it will not wait for them and continue execution.
+
+To make sure your client receives all messages just call _listen()_ function in your main loop. Be aware that some sleeping time (200 ms +) is needed in order to let the underlying library listen for messages and release the socket.
+
+```py
+while client.is_connected():
+    client.listen() # listen for incoming messages
+    client.send_telemetry(...)
+    sleep(3)
+```
+You also need to subscribe to specific events to effectively process messages, otherwise client would just skip them (see below).
+
 ### Listen to properties update
 Subscribe to properties update event before calling _connect()_:
 ```py
