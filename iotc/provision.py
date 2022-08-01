@@ -1,11 +1,11 @@
+from iotc.constants import IoTCConnectType, encode_uri_component, ConsoleLogger, IoTCLogLevel
+from iotc.hmac import new as hmac
+import hashlib
+import ubinascii
+import json
 import sys
 import gc
 gc.collect()
-import json
-from iotc.constants import IoTCConnectType,encode_uri_component,ConsoleLogger,IoTCLogLevel
-import ubinascii
-import hashlib
-from iotc.hmac import new as hmac
 gc.collect()
 try:
     from utime import time, sleep
@@ -25,10 +25,15 @@ gc.collect()
 
 class Credentials:
 
+    @classmethod
+    def create_from_json_string(cls, cred_str):
+        cred_obj = json.loads(cred_str)
+        return cls(cred_obj['host'], cred_obj['user'], cred_obj['password'])
+
     def __init__(self, host, user, password):
         self._host = host
-        self._user = user
-        self._password = password
+        self._user = user.encode('utf-8')
+        self._password = password.encode('utf-8')
 
     @property
     def host(self):
@@ -42,8 +47,11 @@ class Credentials:
     def password(self):
         return self._password
 
+    def to_json_string(self):
+        return json.dumps({"host": self._host, "user": self.user, "password": self.password})
+
     def __str__(self):
-        return 'Host={};User={};Password={}'.format(self._host,self._user,self._password)
+        return 'Host={};User={};Password={}'.format(self._host, self._user, self._password)
 
 
 class ProvisioningClient():
@@ -55,9 +63,9 @@ class ProvisioningClient():
         self._credentials_type = credentials_type
         self._api_version = '2019-01-15'
         if logger is not None:
-            self._logger=logger
+            self._logger = logger
         else:
-            self._logger=ConsoleLogger(IoTCLogLevel.DISABLED)
+            self._logger = ConsoleLogger(IoTCLogLevel.DISABLED)
 
         if model_id is not None:
             self._model_id = model_id
@@ -90,7 +98,7 @@ class ProvisioningClient():
             gc.collect()
         except:
             pass
-        
+
         expiry = time() + 946706400   # 6 hours from now in epoch
         signature = encode_uri_component(self._compute_key(
             self._device_key, '{}\n{}'.format(resource_uri, expiry)))
