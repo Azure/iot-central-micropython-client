@@ -39,7 +39,13 @@ class Command(object):
 
 
 class IoTCClient():
-    def __init__(self, id_scope, device_id, credentials_type: IoTCConnectType, credentials, logger=None, storage=None):
+    def __init__(self,
+                 id_scope,
+                 device_id,
+                 credentials_type: IoTCConnectType,
+                 credentials,
+                 logger=None,
+                 storage=None):
         self._device_id = device_id
         self._id_scope = id_scope
         self._credentials_type = credentials_type
@@ -82,9 +88,11 @@ class IoTCClient():
             # commands
             match = self._commands_regex.match(topic)
             if match is not None:
-                if all(m is not None for m in [match.group(1), match.group(2)]):
+                if all(m is not None for m in [match.group(1),
+                                               match.group(2)]):
                     command_name = match.group(1)
                     command_req = match.group(2)
+                    self.command_req = command_req
                     command = Command(command_name, message)
                     try:
                         command_name_with_components = command_name.split("*")
@@ -100,15 +108,27 @@ class IoTCClient():
 
                         def reply_fn():
                             self._logger.debug(
-                                'Acknowledging command {}'.format(command.name))
+                                'Acknowledging command {}'.format(
+                                    command.name))
                             self._mqtt_client.publish(
-                                '$iothub/methods/res/{}/?$rid={}'.format(200, command_req).encode('utf-8'), '')
+                                '$iothub/methods/res/{}/?$rid={}'.format(
+                                    200, command_req).encode('utf-8'), '')
                             if command.component_name is not None:
-                                self.send_property({"{}".format(command.component_name): {"{}".format(
-                                    command.name): {"value": command.value, "requestId": command_req}}})
+                                self.send_property({
+                                    "{}".format(command.component_name): {
+                                        "{}".format(command.name): {
+                                            "value": command.value,
+                                            "requestId": command_req
+                                        }
+                                    }
+                                })
                             else:
-                                self.send_property({"{}".format(command.name): {
-                                                   "value": command.value, "requestId": command_req}})
+                                self.send_property({
+                                    "{}".format(command.name): {
+                                        "value": command.value,
+                                        "requestId": command_req
+                                    }
+                                })
 
                         command.reply = reply_fn
                         self._on_commands(command)
@@ -116,9 +136,11 @@ class IoTCClient():
                     except:
                         pass
 
-        elif topic.startswith(HubTopics.ENQUEUED_COMMANDS.format(self._device_id)):
+        elif topic.startswith(
+                HubTopics.ENQUEUED_COMMANDS.format(self._device_id)):
             params = topic.split(
-                "devices/{}/messages/devicebound/".format(self._device_id), 1)[1].split('&')
+                "devices/{}/messages/devicebound/".format(self._device_id),
+                1)[1].split('&')
             for param in params:
                 p = param.split('=')
                 if p[0] == "method-name":
@@ -139,7 +161,8 @@ class IoTCClient():
                         pass
 
                     self._logger.debug(
-                        'Received enqueued command {} with message: {}'.format(command.name, command.value))
+                        'Received enqueued command {} with message: {}'.format(
+                            command.name, command.value))
                     self._on_enqueued_commands(command)
 
     def connect(self, force_dps=False):
@@ -152,12 +175,19 @@ class IoTCClient():
             creds = self._storage.retrieve()
 
         if creds is None:
-            prov = ProvisioningClient(
-                self._id_scope, self._device_id, self._credentials_type, self._credentials, self._logger, self._model_id)
+            prov = ProvisioningClient(self._id_scope, self._device_id,
+                                      self._credentials_type,
+                                      self._credentials, self._logger,
+                                      self._model_id)
             creds = prov.register()
 
-        self._mqtt_client = MQTTClient(
-            self._device_id, creds.host, 8883, creds.user, creds.password, ssl=True, keepalive=60)
+        self._mqtt_client = MQTTClient(self._device_id,
+                                       creds.host,
+                                       8883,
+                                       creds.user,
+                                       creds.password,
+                                       ssl=True,
+                                       keepalive=60)
         self._commands_regex = ure.compile(
             '\$iothub\/methods\/POST\/(.+)\/\?\$rid=(.+)')
         try:
@@ -170,12 +200,13 @@ class IoTCClient():
             self._mqtt_client.subscribe(HubTopics.TWIN)
             self._mqtt_client.subscribe('{}/#'.format(HubTopics.PROPERTIES))
             self._mqtt_client.subscribe('{}/#'.format(HubTopics.COMMANDS))
-            self._mqtt_client.subscribe(
-                '{}/#'.format(HubTopics.ENQUEUED_COMMANDS.format(self._device_id)))
+            self._mqtt_client.subscribe('{}/#'.format(
+                HubTopics.ENQUEUED_COMMANDS.format(self._device_id)))
 
             self._logger.debug(self._twin_request_id)
             self._mqtt_client.publish(
-                HubTopics.TWIN_REQ.format(self._twin_request_id).encode('utf-8'), '{{}}')
+                HubTopics.TWIN_REQ.format(
+                    self._twin_request_id).encode('utf-8'), '{{}}')
         except:
             self._logger.info("ERROR: Failed to connect to Hub")
             if force_dps is True:
@@ -193,7 +224,8 @@ class IoTCClient():
     def send_property(self, payload):
         self._logger.debug('Sending properties {}'.format(json.dumps(payload)))
         self._mqtt_client.publish(
-            HubTopics.PROP_REPORT.format(time()).encode('utf-8'), json.dumps(payload))
+            HubTopics.PROP_REPORT.format(time()).encode('utf-8'),
+            json.dumps(payload))
 
     def send_telemetry(self, payload, properties=None):
         topic = 'devices/{}/messages/events/?$.ct={}&$.ce={}'.format(
@@ -202,8 +234,8 @@ class IoTCClient():
             for prop in properties:
                 topic += '&{}={}'.format(prop, properties[prop])
 
-        self._mqtt_client.publish(topic.encode(
-            'utf-8'), json.dumps(payload).encode('utf-8'))
+        self._mqtt_client.publish(topic.encode('utf-8'),
+                                  json.dumps(payload).encode('utf-8'))
 
     def on(self, event, callback):
         self._events[event] = callback
@@ -230,22 +262,8 @@ class IoTCClient():
         if ret:
             if component_name is not None:
                 self._logger.debug("Acknowledging {}".format(property_name))
-                self.send_property(
-                    {
-                        "{}".format(component_name): {
-                            "{}".format(property_name): {
-                                "ac": 200,
-                                "ad": "Property received",
-                                "av": property_version,
-                                "value": property_value,
-                            }
-                        }
-                    }
-                )
-            else:
-                self._logger.debug("Acknowledging {}".format(property_name))
-                self.send_property(
-                    {
+                self.send_property({
+                    "{}".format(component_name): {
                         "{}".format(property_name): {
                             "ac": 200,
                             "ad": "Property received",
@@ -253,11 +271,20 @@ class IoTCClient():
                             "value": property_value,
                         }
                     }
-                )
+                })
+            else:
+                self._logger.debug("Acknowledging {}".format(property_name))
+                self.send_property({
+                    "{}".format(property_name): {
+                        "ac": 200,
+                        "ad": "Property received",
+                        "av": property_version,
+                        "value": property_value,
+                    }
+                })
         else:
             self._logger.debug(
-                'Property "{}" unsuccessfully processed'.format(property_name)
-            )
+                'Property "{}" unsuccessfully processed'.format(property_name))
 
     def on_properties_update(self, patch):
         try:
@@ -283,9 +310,7 @@ class IoTCClient():
                         continue
                     self._logger.debug(
                         'In component "{}" for property "{}"'.format(
-                            prop, component_prop
-                        )
-                    )
+                            prop, component_prop))
                     self._handle_property_ack(
                         prop_cb,
                         component_prop,
@@ -294,19 +319,30 @@ class IoTCClient():
                         prop,
                     )
             else:
-                self._handle_property_ack(
-                    prop_cb, prop, patch[prop]["value"], patch["$version"]
-                )
+                self._handle_property_ack(prop_cb, prop, patch[prop]["value"],
+                                          patch["$version"])
 
     def _cmd_resp(self, command: Command, value):
-        self._logger.debug(
-            'Responding to command "{}" request'.format(command.name))
+        self._logger.debug('Responding to command "{}" request'.format(
+            command.name))
         self.send_property({
             '{}'.format(command.name): {
                 'value': value,
-                'requestId': command.request_id
+                'requestId': self.command_req
             }
         })
+
+    def _cmd_ack(self, command: Command):
+        self._logger.debug('Acknowledging command {}'.format(command.name))
+        output = {
+            "status": 201,
+            "payload": {
+                "command": command.value.decode()
+            }
+        }
+        self._mqtt_client.publish(
+            '$iothub/methods/res/{}/?$rid={}'.format(
+                200, self.command_req).encode('utf-8'), json.dumps(output))
 
     def _on_commands(self, command: Command):
         try:
@@ -314,9 +350,11 @@ class IoTCClient():
         except KeyError:
             return
 
-        self._logger.debug(
-            'Received command {}'.format(command.name))
-        cmd_cb(command)
+        self._logger.debug('Received command {}'.format(command.name))
+        self._logger.debug('Received command {}'.format(command.value))
+        print(command.value.decode())
+        self._cmd_ack(command)
+        cmd_cb(command, self._cmd_resp)
 
     def _on_enqueued_commands(self, command: Command):
         try:
@@ -324,7 +362,6 @@ class IoTCClient():
         except KeyError:
             return
 
-        self._logger.debug(
-            'Received enqueued command {}'.format(command.name))
+        self._logger.debug('Received enqueued command {}'.format(command.name))
 
         cmd_cb(command)
