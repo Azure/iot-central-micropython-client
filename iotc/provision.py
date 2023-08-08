@@ -17,9 +17,11 @@ gc.collect()
 try:
     import urequests
 except:
-    import upip
-    upip.install('micropython-urequests')
-    import urequests
+    import mip
+    mip.install('github:Azure/iot-central-micropython-client/package.json')
+    # import upip
+    # upip.install('micropython-urequests')
+    # import urequests
 gc.collect()
 
 
@@ -53,7 +55,7 @@ class ProvisioningClient():
         self._scope_id = scope_id
         self._registration_id = registration_id
         self._credentials_type = credentials_type
-        self._api_version = '2019-01-15'
+        self._api_version = '2019-03-31'
         if logger is not None:
             self._logger=logger
         else:

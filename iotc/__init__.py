@@ -7,10 +7,12 @@ import gc
 try:
     from umqtt.robust import MQTTClient
 except:
-    print('Mqtt library not found. Installing...')
-    import upip
-    upip.install('micropython-umqtt.robust')
-    from umqtt.robust import MQTTClient
+    import mip
+    mip.install('github:Azure/iot-central-micropython-client/package.json')
+    # print('Mqtt library not found. Installing...')
+    # import upip
+    # upip.install('micropython-umqtt.robust')
+    # from umqtt.robust import MQTTClient
 gc.collect()
 class Command():
     def __init__(self, cmd_name, request_id):
