@@ -1,0 +1,12 @@
+{
+  "urls": [
+    ["hmac.py", "github:Azure/iot-central-micropython-client/iotc/hmac.py"],
+    ["provision.py", "github:Azure/iot-central-micropython-client/iotc/provision.py"],
+    ["constants.py", "github:Azure/iot-central-micropython-client/iotc/constants.py"],
+    ["__init__.py", "github:Azure/iot-central-micropython-client/iotc/__init__.py"],
+  ],
+  "deps": [
+    ["umqtt.robust", "latest"],
+  ],
+  "version": "1.0"
+}
