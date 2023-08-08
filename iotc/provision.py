@@ -18,10 +18,8 @@ try:
     import urequests
 except:
     import mip
-    mip.install('github:Azure/iot-central-micropython-client/package.json')
-    # import upip
-    # upip.install('micropython-urequests')
-    # import urequests
+    mip.install("urequests")
+
 gc.collect()
 
 

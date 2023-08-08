@@ -3,6 +3,13 @@ from utime import sleep
 from random import randint
 from iotc import IoTCClient,IoTCConnectType,IoTCLogLevel,IoTCEvents
 
+# If your device needs wifi before running uncomment and adapt as necessary
+# import network
+# wlan = network.WLAN(network.STA_IF)
+# wlan.active(True)
+# wlan.connect("SSID","password")
+# print(wlan.isconnected())
+
 scope_id=''
 device_id=''
 key=''
