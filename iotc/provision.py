@@ -19,6 +19,7 @@ try:
 except:
     import mip
     mip.install("urequests")
+    import urequests
 
 gc.collect()
 

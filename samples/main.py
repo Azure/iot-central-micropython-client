@@ -1,18 +1,28 @@
 import sys
 from utime import sleep
 from random import randint
-from iotc import IoTCClient,IoTCConnectType,IoTCLogLevel,IoTCEvents
 
-# If your device needs wifi before running uncomment and adapt as necessary
+# If your device needs wifi before running uncomment and adapt the code below as necessary
 # import network
 # wlan = network.WLAN(network.STA_IF)
 # wlan.active(True)
 # wlan.connect("SSID","password")
+# while not wlan.isconnected():
+#     pass
 # print(wlan.isconnected())
 
-scope_id=''
-device_id=''
-key=''
+try:
+    import iotc
+except:
+    import mip
+    mip.install('github:Azure/iot-central-micropython-client/package.json')
+    import iotc
+    
+from iotc import IoTCClient,IoTCConnectType,IoTCLogLevel,IoTCEvents
+
+scope_id='scope-id'
+device_id='device-id'
+key='device or symmetric key'
 conn_type=IoTCConnectType.DEVICE_KEY
 
 client=IoTCClient(scope_id,device_id,conn_type,key)
@@ -42,4 +52,3 @@ while client.is_connected():
     print('Sending telemetry')
     client.send_telemetry({'temperature':randint(0,20),'pressure':randint(0,20),'acceleration':{'x':randint(0,20),'y':randint(0,20)}})
     sleep(2)
-

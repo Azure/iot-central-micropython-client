@@ -10,25 +10,34 @@ It can run on various boards with some tweaks for low-memory devices.
 
 
 ## Prerequisites
-+ Micropython 1.12+ (recommended)
++ Micropython 1.20+ (recommended).
 
 ## Import ``iotc``
-In most of the micropython capable boards, is sufficient to import library or install it if missing through upip.
+With this release we have moved from upip to mip for installing dependencies.  The iotc and dependencies are in the package.json file in the root or the repo.  The iotc file will now be installed from this GitHub repository rather from PyPi making bug fixes easier for contributors.  The sample main.py has been changed so that it does an install when running if the iotc library is not present.  For a manual install you can use the following.  Be aware that your device will need to have internet access so it may need additional code to setup and connect to wifi.
 
 ```py
+# If your device needs wifi before running uncomment and adapt the code below as necessary
+# import network
+# wlan = network.WLAN(network.STA_IF)
+# wlan.active(True)
+# wlan.connect("SSID","password")
+# while not wlan.isconnected():
+#     pass
+# print(wlan.isconnected())
+
 try:
     import iotc
 except:
-    import upip
-    upip.install('micropython-iotc')
+    import mip
+    mip.install('github:Azure/iot-central-micropython-client/package.json')
     import iotc
 ```
 
 The same commands apply when running through Micropython REPL.
 
-> **NOTE:** for low-end devices like the **ESP8266**, importing as external module can cause out-of-memory exception during execution because of the limited amount of heap space.
-For this kind of boards, putting the library on flash memory as a frozen module might be the only available option.<br/><br/>
-Details on how to build a custom firmware for specific boards with frozen modules can be found on official micropython [github repository](https://github.com/micropython/micropython) and [website](http://docs.micropython.org/en/latest/).
+> **NOTE:** we are dropping support for ESP8266/NodeMCU devices.  In testing the code on ESP8266 using 1.20.0 of Micropython the device continuously triggers the watchdog timers (WDT) on registration of the device.  In the past we have managed to work around the agressive WDT issues.  Given that the ESP32 is a far more capable device we suggest the use of ESP32 over ESP8622.
+
+> **NOTE:** we have switched our primary testing device to be the Raspberry Pi Pico W as it is widly available and a great device for doing Micropython development.  See: [Raspberry Pi Pico Getting started](https://projects.raspberrypi.org/en/projects/getting-started-with-the-pico).  The tested version of Micropython on the Raspberry Pi Pico W was v1.20.0 [release notes](https://github.com/micropython/micropython/releases/tag/v1.20.0)
 
 
 ## Samples

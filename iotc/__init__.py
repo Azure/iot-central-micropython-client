@@ -9,6 +9,7 @@ try:
 except:
     import mip
     mip.install('github:Azure/iot-central-micropython-client/package.json')
+    from umqtt.robust import MQTTClient
 
 gc.collect()
 class Command():
