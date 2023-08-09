@@ -1,9 +1,9 @@
 {
   "urls": [
-    ["/iotc/hmac.py", "github:Azure/iot-central-micropython-client/iotc/hmac.py"],
-    ["/iotc/provision.py", "github:Azure/iot-central-micropython-client/iotc/provision.py"],
-    ["/iotc/constants.py", "github:Azure/iot-central-micropython-client/iotc/constants.py"],
-    ["/iotc/__init__.py", "github:Azure/iot-central-micropython-client/iotc/__init__.py"]
+    ["./iotc/hmac.py", "github:Azure/iot-central-micropython-client/iotc/hmac.py"],
+    ["./iotc/provision.py", "github:Azure/iot-central-micropython-client/iotc/provision.py"],
+    ["./iotc/constants.py", "github:Azure/iot-central-micropython-client/iotc/constants.py"],
+    ["./iotc/__init__.py", "github:Azure/iot-central-micropython-client/iotc/__init__.py"]
   ],
   "deps": [
     ["umqtt.simple", "latest"],
