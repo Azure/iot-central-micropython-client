@@ -4,6 +4,7 @@ import ure
 import json
 from utime import time,sleep
 import gc
+import ssl
 try:
     from umqtt.robust import MQTTClient
 except:
@@ -103,7 +104,7 @@ class IoTCClient():
             self._id_scope, self._device_id, self._credentials_type,self._credentials,self._logger,self._model_id)
         creds = prov.register()
         self._mqtt_client = MQTTClient(self._device_id, creds.host, 8883, creds.user.encode(
-            'utf-8'), creds.password.encode('utf-8'), ssl=True, keepalive=60)
+            'utf-8'), creds.password.encode('utf-8'), ssl=ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT), keepalive=60)
         self._commands_regex = ure.compile(
             '\$iothub\/methods\/POST\/(.+)\/\?\$rid=(.+)')
         self._mqtt_client.connect(False)
